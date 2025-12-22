@@ -1,63 +1,71 @@
 // config.vue
 <script setup lang="ts">
-import Controlbar from '@components/Controlbar.vue';
 import { NButton, NForm, NFormItem, NInput, useMessage } from 'naive-ui';
-import type { FormInst, FormRules } from 'naive-ui';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import type { ConfigProps } from '@/types/ConfigProps';
+import { invoke } from '@tauri-apps/api/core';
 
+const emit = defineEmits<{
+  (e: 'close'): void;
+}>();
+
+// 引入消息提示组件
 const message = useMessage();
-
-const formRef = ref<FormInst | null>(null);
-
+// 引入表单数据模型
 const form = ref<ConfigProps>({
   app_id: '',
   app_key: '',
 });
 
-const rules: FormRules = {
-  app_id: [
-    { required: true, message: '请输入 App ID', trigger: 'blur' },
-  ],
-  app_key: [
-    { required: true, message: '请输入 App Key', trigger: 'blur' },
-  ],
-};
-
 const handleSubmit = async () => {
-  if (!formRef.value) return;
-
   try {
-    await formRef.value.validate();
-    // 这里可以添加保存配置的逻辑
-    message.success('配置保存成功');
-    console.log('保存的配置:', form.value);
+    await invoke('set_config', {
+      config: {
+        baidu: {
+          appid: form.value.app_id,
+          secret: form.value.app_key,
+        },
+      },
+    })
+    // 关闭配置弹窗
+    emit('close');
+    message.success('配置保存成功')
   } catch (error) {
-    message.error('请检查配置信息');
+    console.error(error)
+    message.error('请检查配置信息')
   }
-};
+}
 
 const handleReset = () => {
   form.value = {
     app_id: '',
     app_key: '',
   };
-  if (formRef.value) {
-    formRef.value.restoreValidation();
-  }
 };
 
+// 组件挂载时读取配置
+onMounted(async () => {
+  try {
+    const config = await invoke<any>('get_config')
+
+    if (config?.baidu) {
+      form.value.app_id = config.baidu.appid || ''
+      form.value.app_key = config.baidu.secret || ''
+    }
+  } catch (e) {
+    console.error('读取配置失败', e)
+  }
+})
 </script>
 
 <template>
   <div class="config">
-    <controlbar title="百度翻译配置" />
-    <n-form :model="form" :rules="rules" ref="formRef">
+    <n-form label-placement="left" :model="form">
       <n-form-item label="App ID" prop="app_id">
-        <n-input v-model:value="form.app_id" placeholder="请输入百度翻译 App ID" />
+        <n-input size="large" v-model:value="form.app_id" placeholder="请输入百度翻译 App ID" />
       </n-form-item>
       <n-form-item label="App Key" prop="app_key">
-        <n-input v-model:value="form.app_key" placeholder="请输入百度翻译 App Key" />
+        <n-input size="large" v-model:value="form.app_key" placeholder="请输入百度翻译 App Key" />
       </n-form-item>
       <n-form-item>
         <div class="form-actions">
@@ -78,52 +86,48 @@ const handleReset = () => {
 
 /* 主容器 - 与Translate组件保持一致的macOS窗口风格 */
 .config {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  min-width: 500px;
-  height: max(200px, 100vh);
+  width: 500px;
+  height: fit-content;
   background-color: $white;
   border-radius: $border-radius;
   box-shadow: $shadow-lg;
-  overflow: hidden;
+  overflow: auto;
+  scrollbar-width: none;
   border: $border-width $border-style $border-color;
 }
 
 /* 表单样式 - 与Translate组件风格统一 */
 :deep(.n-form) {
-  padding: $spacing-lg $spacing-xl;
-  background: $white;
-  border-bottom: $border-width $border-style $border-color;
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
+  padding: $spacing-lg;
+  background: $white;
 }
 
 :deep(.n-form-item) {
-  margin-bottom: 0;
   display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
+  align-items: center;
 }
 
 :deep(.n-form-item-label) {
   color: $text-secondary;
   font-weight: $font-weight-medium;
   font-size: $font-size-base;
-  margin-bottom: 0;
+}
+
+:deep(.n-form-item-blank) {
+  flex: 1;
 }
 
 /* 输入框样式 - 与Translate组件的选择器风格统一 */
 :deep(.n-input) {
   border-radius: $border-radius;
   border: $border-width $border-style $border-color;
-  // background-color: $gray-light;
   transition: $transition-fast;
 
   &:hover {
     border-color: rgba(0, 0, 0, 0.15);
-    // background-color: $gray-medium;
     box-shadow: none;
   }
 
@@ -135,7 +139,6 @@ const handleReset = () => {
 }
 
 :deep(.n-input__input) {
-  padding: 10px 12px;
   font-size: $font-size-base;
   color: $text-primary;
   background-color: transparent;
@@ -145,26 +148,25 @@ const handleReset = () => {
   border-radius: $border-radius;
 }
 
-:deep(.n-form-item-feedback) {
-  font-size: $font-size-sm;
-  color: #ff4d4f;
-  margin-top: $spacing-xs;
-}
+// :deep(.n-form-item-feedback) {
+//   font-size: $font-size-sm;
+//   color: #ff4d4f;
+// }
 
 /* 按钮区域样式 */
 .form-actions {
   display: flex;
+  flex: 1;
   gap: $spacing-md;
-  justify-content: flex-start;
+  justify-content: flex-end;
   margin-top: $spacing-md;
-  padding: $spacing-lg $spacing-xl;
+  // padding: $spacing-lg $spacing-xl;
 }
 
 /* 按钮样式 - 与Translate组件的按钮风格统一 */
 :deep(.n-button) {
   font-weight: $font-weight-medium;
   font-size: $font-size-base;
-  padding: 10px 24px;
   border-radius: $border-radius;
   transition: $transition-fast;
   box-shadow: none;

@@ -1,19 +1,17 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
 mod commands;
 
-use commands::{config::*, translate::*, window::*};
+use commands::{config, translate, window};
 
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
-            window_minimize,
-            window_toggle_maximize,
-            window_close,
-            window_start_drag,
-            translate_text,
-            get_config,
-            set_config
+            config::get_config,
+            config::set_config,
+            config::has_baidu_key,
+            translate::translate_text,
+            window::window_minimize,
+            window::window_toggle_maximize,
+            window::window_close
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

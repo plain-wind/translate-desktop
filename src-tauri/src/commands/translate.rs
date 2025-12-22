@@ -1,14 +1,9 @@
+use crate::commands::config::get_config;
 use md5;
+use rand::Rng;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::time::{SystemTime, UNIX_EPOCH};
-
-const BAIDU_API: &str = "https://fanyi-api.baidu.com/api/trans/vip/translate";
-
-// ⚠️ 建议后面改成从配置 / env 读取
-const BAIDU_APP_ID: &str = "20251220002523450";
-const BAIDU_SECRET: &str = "TMPRCM9hVuHl7x67672Y";
+use tauri::AppHandle;
 
 #[derive(Debug, Deserialize)]
 pub struct TranslateRequest {
@@ -23,49 +18,49 @@ pub struct TranslateResponse {
 }
 
 #[derive(Debug, Deserialize)]
-struct BaiduResult {
-    trans_result: Option<Vec<BaiduTrans>>,
-    error_code: Option<String>,
+struct BaiduResponse {
+    trans_result: Option<Vec<BaiduResult>>,
     error_msg: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-struct BaiduTrans {
+struct BaiduResult {
     dst: String,
 }
 
 #[tauri::command]
-pub async fn translate_text(req: TranslateRequest) -> Result<TranslateResponse, String> {
-    if req.text.trim().is_empty() {
-        return Ok(TranslateResponse {
-            translated: "".into(),
-        });
+pub async fn translate_text(
+    app: AppHandle,
+    req: TranslateRequest,
+) -> Result<TranslateResponse, String> {
+    let config = get_config(app);
+
+    let appid = config.baidu.appid;
+    let secret = config.baidu.secret;
+
+    if appid.is_empty() || secret.is_empty() {
+        return Err("未配置百度翻译 Key".into());
     }
 
-    let salt = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis()
-        .to_string();
-    let sign_str = format!("{}{}{}{}", BAIDU_APP_ID, req.text, salt, BAIDU_SECRET);
+    let salt: u32 = rand::thread_rng().gen();
+    let sign_str = format!("{}{}{}{}", appid, req.text, salt, secret);
     let sign = format!("{:x}", md5::compute(sign_str));
-
-    let mut params = HashMap::new();
-    params.insert("q", req.text);
-    params.insert("from", req.source);
-    params.insert("to", req.target);
-    params.insert("appid", BAIDU_APP_ID.to_string());
-    params.insert("salt", salt);
-    params.insert("sign", sign);
 
     let client = Client::new();
     let res = client
-        .post(BAIDU_API)
-        .form(&params)
+        .get("https://fanyi-api.baidu.com/api/trans/vip/translate")
+        .query(&[
+            ("q", &req.text),
+            ("from", &req.source),
+            ("to", &req.target),
+            ("appid", &appid),
+            ("salt", &salt.to_string()),
+            ("sign", &sign),
+        ])
         .send()
         .await
         .map_err(|e| e.to_string())?
-        .json::<BaiduResult>()
+        .json::<BaiduResponse>()
         .await
         .map_err(|e| e.to_string())?;
 
@@ -77,7 +72,7 @@ pub async fn translate_text(req: TranslateRequest) -> Result<TranslateResponse, 
         .trans_result
         .unwrap_or_default()
         .into_iter()
-        .map(|t| t.dst)
+        .map(|r| r.dst)
         .collect::<Vec<_>>()
         .join("\n");
 

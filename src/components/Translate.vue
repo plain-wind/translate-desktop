@@ -3,6 +3,7 @@
 import Controlbar from '@components/Controlbar.vue';
 import LangSelect from '@components/LangSelect.vue';
 import LangTexarea from '@components/LangTexarea.vue';
+import { NMessageProvider } from 'naive-ui';
 import type { TranslateProps } from '@/types/TranslateProps';
 import { ref, watch } from 'vue';
 import { FromLang, ToLang } from '@/types/Lang';
@@ -46,34 +47,35 @@ const swapLangs = () => {
 import { invoke } from "@tauri-apps/api/core";
 
 // 翻译加载状态
-const loading = ref(false)
-const error = ref('')
+const loading = ref(false);
+const error = ref('');
 
 // 翻译文本
 const translate = async () => {
   if (!form.value.text.trim()) {
-    form.value.translate = ''
-    return
+    form.value.translate = '';
+    return;
   }
 
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = '';
 
   try {
     const result = await invoke<{ translated: string }>("translate_text", {
       req: {
         text: form.value.text,
         source: form.value.from,
-        target: form.value.to
-      }
-    })
-    form.value.translate = result.translated
+        target: form.value.to,
+      },
+    });
+    form.value.translate = result.translated;
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '翻译失败'
+    error.value = err instanceof Error ? err.message : '翻译失败';
+    form.value.translate = 'api 调用失败';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 监听文本、源语言、目标语言变化，触发翻译
 watch(
@@ -82,23 +84,25 @@ watch(
     console.log('翻译了.....')
     translate()
   }, 500)
-)
+);
 
 </script>
 
 <template>
-  <div class="translate-container">
-    <controlbar title="百度翻译软件" />
-    <div class="lang-selector">
-      <lang-select label="源语言" v-model="form.from" :options="fromOptions" />
-      <button class="swap-btn" :class="{ 'disabled': form.from === 'auto' }" @click="swapLangs">↔</button>
-      <lang-select label="目标语言" v-model="form.to" :options="toOptions" />
+  <n-message-provider>
+    <div class="translate-container">
+      <controlbar title="百度翻译软件" />
+      <div class="lang-selector">
+        <lang-select label="源语言" v-model="form.from" :options="fromOptions" />
+        <button class="swap-btn" :class="{ 'disabled': form.from === 'auto' }" @click="swapLangs">↔</button>
+        <lang-select label="目标语言" v-model="form.to" :options="toOptions" />
+      </div>
+      <div class="translate-content">
+        <lang-texarea label="输入" v-model="form.text" placeholder="输入需要翻译的文本..." />
+        <lang-texarea label="结果" v-model="form.translate" placeholder="翻译结果将显示在这里..." readonly />
+      </div>
     </div>
-    <div class="translate-content">
-      <lang-texarea label="输入" v-model="form.text" placeholder="输入需要翻译的文本..." />
-      <lang-texarea label="结果" v-model="form.translate" placeholder="翻译结果将显示在这里..." readonly />
-    </div>
-  </div>
+  </n-message-provider>
 </template>
 
 <style scoped lang="scss">
