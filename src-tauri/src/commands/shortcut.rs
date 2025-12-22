@@ -4,50 +4,67 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use crate::commands::config::get_config;
 
-pub fn register_shortcut(app: &AppHandle) {
-    let config = get_config(app.clone());
-
-    let shortcut_cfg = match config.shortcut {
-        Some(s) if s.enabled => s,
-        _ => return,
-    };
-
-    let shortcut_str = match shortcut_cfg.key {
-        Some(s) if !s.is_empty() => s,
-        _ => return,
-    };
-
-    let shortcut = match Shortcut::from_str(&shortcut_str) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("快捷键格式错误: {:?}", e);
-            return;
-        }
-    };
-
-    let app_handle = app.clone();
+/// 核心：应用当前配置里的快捷键（可反复调用）
+fn apply_shortcut(app: &AppHandle) -> Result<(), String> {
     let manager = app.global_shortcut();
 
-    println!("🚀 注册并监听快捷键: {}", shortcut_str);
+    // 🚿 1. 清空所有旧快捷键（包含旧监听）
+    manager
+        .unregister_all()
+        .map_err(|e| format!("清除旧快捷键失败: {:?}", e))?;
 
-    // ⚠️ 重点：不要再调用 register()
-    let _ = manager.on_shortcut(shortcut, move |_app, _shortcut, event| {
-        // 🔥 关键：只处理按下事件
-        if event.state != ShortcutState::Pressed {
-            return;
-        }
+    let config = get_config(app.clone());
 
-        println!("🔥 快捷键 Pressed");
+    let Some(sc) = config.shortcut else {
+        return Ok(());
+    };
 
-        if let Some(window) = app_handle.webview_windows().values().next() {
-            let visible = window.is_visible().unwrap_or(false);
+    if !sc.enabled {
+        return Ok(());
+    }
 
-            if visible {
-                let _ = window.hide();
-            } else {
-                let _ = window.show();
-                let _ = window.set_focus();
+    let key = sc.key.as_deref().unwrap_or("").trim();
+    if key.is_empty() {
+        return Err("快捷键不能为空".into());
+    }
+
+    let shortcut = Shortcut::from_str(key).map_err(|_| format!("非法快捷键格式: {}", key))?;
+
+    let app_handle = app.clone();
+
+    // ⚠️ 2. 只使用 on_shortcut（不要 register）
+    app.global_shortcut()
+        .on_shortcut(shortcut.clone(), move |_app, _sc, event| {
+            if event.state != ShortcutState::Pressed {
+                return;
             }
-        }
-    });
+
+            if let Some(window) = app_handle.get_webview_window("main") {
+                let visible = window.is_visible().unwrap_or(false);
+
+                if visible {
+                    let _ = window.hide();
+                } else {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        })
+        .map_err(|e| format!("快捷键监听失败: {:?}", e))?;
+
+    println!("[shortcut] registered: {}", key);
+    Ok(())
+}
+
+/// 启动时调用
+pub fn register_shortcut(app: &AppHandle) {
+    if let Err(e) = apply_shortcut(app) {
+        eprintln!("[shortcut] {}", e);
+    }
+}
+
+/// 前端热更新调用
+#[tauri::command]
+pub fn reload_shortcut(app: AppHandle) -> Result<(), String> {
+    apply_shortcut(&app)
 }

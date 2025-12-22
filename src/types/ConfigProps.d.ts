@@ -4,4 +4,5 @@ export interface ConfigProps {
   shortcut: string;
   isShortcutEnabled: boolean;
   isTopmost: boolean;
+  isAutoStart: boolean;
 }

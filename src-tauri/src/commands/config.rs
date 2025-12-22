@@ -13,6 +13,7 @@ pub struct AppConfig {
     pub baidu: BaiduConfig,
     pub window: Option<WindowConfig>,
     pub shortcut: Option<ShortcutConfig>,
+    pub is_topmost: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]

@@ -1,6 +1,6 @@
 // window.rs
 use crate::commands::config::{get_config, set_config, WindowConfig};
-use tauri::Window;
+use tauri::{AppHandle, Manager, Window};
 
 #[tauri::command]
 pub fn window_minimize(window: Window) {
@@ -35,4 +35,15 @@ pub fn save_window_size(app: tauri::AppHandle, window: Window) -> Result<(), Str
     });
 
     set_config(app, config)
+}
+
+#[tauri::command]
+pub fn set_topmost(app: AppHandle, topmost: bool) -> Result<(), String> {
+    let window = app.get_webview_window("main").ok_or("window not found")?;
+
+    window
+        .set_always_on_top(topmost)
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }

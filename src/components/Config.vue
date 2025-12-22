@@ -4,6 +4,7 @@ import { NButton, NForm, NFormItem, NInput, NSwitch, useMessage } from 'naive-ui
 import { ref, onMounted } from 'vue';
 import type { ConfigProps } from '@/types/ConfigProps';
 import { invoke } from '@tauri-apps/api/core';
+import ShortcutInput from '@/components/ShortcutInput.vue';
 
 const emit = defineEmits<{
   (e: 'close'): void;
@@ -18,7 +19,19 @@ const form = ref<ConfigProps>({
   shortcut: '',
   isShortcutEnabled: true,
   isTopmost: false,
+  isAutoStart: false,
 });
+// 表单副本
+const formCopy: ConfigProps = {
+  app_id: '',
+  app_key: '',
+  shortcut: '',
+  isShortcutEnabled: true,
+  isTopmost: false,
+  isAutoStart: false,
+};
+
+
 
 // 提交表单
 const handleSubmit = async () => {
@@ -33,8 +46,13 @@ const handleSubmit = async () => {
           key: form.value.shortcut || '',
           enabled: form.value.isShortcutEnabled,
         },
+        is_topmost: form.value.isTopmost,
+        is_auto_start: form.value.isAutoStart,
       },
     });
+    await invoke('set_topmost', { topmost: form.value.isTopmost });
+    // 热重载快捷键
+    await invoke('reload_shortcut');
     // 关闭配置弹窗
     emit('close');
     message.success('配置保存成功');
@@ -44,15 +62,9 @@ const handleSubmit = async () => {
   }
 }
 
-// 重置表单
-const handleReset = () => {
-  form.value = {
-    app_id: '',
-    app_key: '',
-    shortcut: '',
-    isShortcutEnabled: true,
-    isTopmost: false,
-  };
+// 撤销表单
+const handleUndo = () => {
+  form.value = { ...formCopy };
 };
 
 // 组件挂载时读取配置
@@ -61,11 +73,13 @@ onMounted(async () => {
     const config = await invoke<any>('get_config');
 
     if (config?.baidu) {
-      form.value.app_id = config.baidu.appid || '';
-      form.value.app_key = config.baidu.secret || '';
-      form.value.shortcut = config.shortcut.key || '';
-      form.value.isShortcutEnabled = config.shortcut.enabled || true;
-      form.value.isTopmost = config.isTopmost || false;
+      formCopy.app_id = config.baidu.appid || '';
+      formCopy.app_key = config.baidu.secret || '';
+      formCopy.shortcut = config.shortcut?.key || '';
+      formCopy.isShortcutEnabled = config.shortcut?.enabled ?? true;
+      formCopy.isTopmost = config.is_topmost ?? false;
+
+      form.value = { ...formCopy };
     }
   } catch (e) {
     console.error('读取配置失败', e);
@@ -75,7 +89,7 @@ onMounted(async () => {
 
 <template>
   <div class="config">
-    <n-form label-placement="left" :model="form">
+    <n-form label-placement="left" label-width="auto" :model="form">
       <n-form-item label="App ID" prop="app_id">
         <n-input size="large" v-model:value="form.app_id" placeholder="请输入百度翻译 App ID" />
       </n-form-item>
@@ -83,8 +97,7 @@ onMounted(async () => {
         <n-input size="large" v-model:value="form.app_key" placeholder="请输入百度翻译 App Key" />
       </n-form-item>
       <n-form-item label="设置快捷键">
-        <n-input :disabled="!form.isShortcutEnabled" size="large" v-model:value="form.shortcut"
-          placeholder="例如Ctrl+F7" />
+        <ShortcutInput v-model="form.shortcut" />
       </n-form-item>
       <n-form-item label="快捷键开关">
         <n-switch v-model:value="form.isShortcutEnabled" size="large" />
@@ -92,13 +105,16 @@ onMounted(async () => {
       <n-form-item label="置顶窗口">
         <n-switch v-model:value="form.isTopmost" size="large" />
       </n-form-item>
+      <n-form-item label="自动启动">
+        <n-switch v-model:value="form.isAutoStart" size="large" />
+      </n-form-item>
       <n-form-item>
         <div class="form-actions">
           <n-button type="primary" @click="handleSubmit" size="large" round>
             保存配置
           </n-button>
-          <n-button @click="handleReset" size="large" round>
-            重置
+          <n-button @click="handleUndo" size="large" round>
+            撤销
           </n-button>
         </div>
       </n-form-item>

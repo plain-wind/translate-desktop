@@ -44,6 +44,10 @@ fn main() {
             window::window_close,
             window::window_minimize,
             window::window_toggle_maximize,
+            window::set_topmost,
+            // shortcut
+            shortcut::reload_shortcut,
+            // shortcut::register_shortcut,
             // translate
             translate::translate_text,
         ])
