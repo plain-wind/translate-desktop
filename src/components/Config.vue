@@ -1,6 +1,6 @@
 // config.vue
 <script setup lang="ts">
-import { NButton, NForm, NFormItem, NInput, useMessage } from 'naive-ui';
+import { NButton, NForm, NFormItem, NInput, NSwitch, useMessage } from 'naive-ui';
 import { ref, onMounted } from 'vue';
 import type { ConfigProps } from '@/types/ConfigProps';
 import { invoke } from '@tauri-apps/api/core';
@@ -15,8 +15,12 @@ const message = useMessage();
 const form = ref<ConfigProps>({
   app_id: '',
   app_key: '',
+  shortcut: '',
+  isShortcutEnabled: true,
+  isTopmost: false,
 });
 
+// 提交表单
 const handleSubmit = async () => {
   try {
     await invoke('set_config', {
@@ -25,35 +29,46 @@ const handleSubmit = async () => {
           appid: form.value.app_id,
           secret: form.value.app_key,
         },
+        shortcut: {
+          key: form.value.shortcut || '',
+          enabled: form.value.isShortcutEnabled,
+        },
       },
-    })
+    });
     // 关闭配置弹窗
     emit('close');
-    message.success('配置保存成功')
+    message.success('配置保存成功');
   } catch (error) {
-    console.error(error)
-    message.error('请检查配置信息')
+    console.error(error);
+    message.error('请检查配置信息');
   }
 }
 
+// 重置表单
 const handleReset = () => {
   form.value = {
     app_id: '',
     app_key: '',
+    shortcut: '',
+    isShortcutEnabled: true,
+    isTopmost: false,
   };
 };
 
 // 组件挂载时读取配置
 onMounted(async () => {
   try {
-    const config = await invoke<any>('get_config')
+    const config = await invoke<any>('get_config');
 
     if (config?.baidu) {
-      form.value.app_id = config.baidu.appid || ''
-      form.value.app_key = config.baidu.secret || ''
+      form.value.app_id = config.baidu.appid || '';
+      form.value.app_key = config.baidu.secret || '';
+      form.value.shortcut = config.shortcut.key || '';
+      form.value.isShortcutEnabled = config.shortcut.enabled || true;
+      form.value.isTopmost = config.isTopmost || false;
     }
   } catch (e) {
-    console.error('读取配置失败', e)
+    console.error('读取配置失败', e);
   }
 })
 </script>
@@ -66,6 +81,16 @@ onMounted(async () => {
       </n-form-item>
       <n-form-item label="App Key" prop="app_key">
         <n-input size="large" v-model:value="form.app_key" placeholder="请输入百度翻译 App Key" />
+      </n-form-item>
+      <n-form-item label="设置快捷键">
+        <n-input :disabled="!form.isShortcutEnabled" size="large" v-model:value="form.shortcut"
+          placeholder="例如Ctrl+F7" />
+      </n-form-item>
+      <n-form-item label="快捷键开关">
+        <n-switch v-model:value="form.isShortcutEnabled" size="large" />
+      </n-form-item>
+      <n-form-item label="置顶窗口">
+        <n-switch v-model:value="form.isTopmost" size="large" />
       </n-form-item>
       <n-form-item>
         <div class="form-actions">

@@ -3,23 +3,45 @@ import { NIcon } from 'naive-ui';
 import Config from '@/components/Config.vue';
 import Mask from '@/components/Mask.vue';
 import { ref } from 'vue';
+import { invoke } from '@tauri-apps/api/core'
 
 defineProps<{
   title: string;
 }>();
 
 const isShowConfig = ref(false);
+
+// 关闭窗口
+const closeWindow = async () => {
+  try {
+    await invoke('save_window_size');
+  } catch (error) {
+    console.error('保存窗口大小失败:', error);
+  }
+
+  await invoke('window_close');
+};
+
+// 最小化窗口
+const minimizeWindow = async () => {
+  await invoke('window_minimize');
+};
+
+// 最大化/恢复窗口
+const toggleMaximizeWindow = async () => {
+  await invoke('window_toggle_maximize');
+};
 </script>
 
 <template>
   <div class="controlbar">
-    <div class="button">
-      <div class="close"></div>
-      <div class="minimize"></div>
-      <div class="zoom"></div>
+    <div class="button no-drag">
+      <div class="close" @click="closeWindow"></div>
+      <div class="minimize" @click="minimizeWindow"></div>
+      <div class="zoom" @click="toggleMaximizeWindow"></div>
     </div>
     <div class="title">{{ title }}</div>
-    <div class="setting">
+    <div class="setting no-drag">
       <n-icon size="20" @click="isShowConfig = true">
         <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32">
           <path
@@ -53,6 +75,9 @@ const isShowConfig = ref(false);
   color: $font-color;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   user-select: none;
+
+  // 拖动区域
+  -webkit-app-region: drag;
 }
 
 .button {
@@ -116,5 +141,9 @@ const isShowConfig = ref(false);
     transform: scale(1.1);
     cursor: pointer;
   }
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
 }
 </style>

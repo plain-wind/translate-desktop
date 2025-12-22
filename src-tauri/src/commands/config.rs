@@ -3,8 +3,22 @@ use std::{fs, path::PathBuf};
 use tauri::{AppHandle, Manager};
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
+pub struct ShortcutConfig {
+    pub key: Option<String>, // 比如 "F7"
+    pub enabled: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct AppConfig {
     pub baidu: BaiduConfig,
+    pub window: Option<WindowConfig>,
+    pub shortcut: Option<ShortcutConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+pub struct WindowConfig {
+    pub width: u32,
+    pub height: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
@@ -45,4 +59,10 @@ pub fn set_config(app: AppHandle, config: AppConfig) -> Result<(), String> {
 pub fn has_baidu_key(app: AppHandle) -> bool {
     let config = get_config(app);
     !config.baidu.appid.is_empty() && !config.baidu.secret.is_empty()
+}
+
+#[tauri::command]
+pub fn get_window_size(app: AppHandle) -> Option<WindowConfig> {
+    let config = get_config(app);
+    config.window
 }
