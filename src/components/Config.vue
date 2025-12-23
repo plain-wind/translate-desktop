@@ -17,7 +17,7 @@ const form = ref<ConfigProps>({
   app_id: '',
   app_key: '',
   shortcut: '',
-  isShortcutEnabled: true,
+  isShortcutEnabled: false,
   isTopmost: false,
   isAutoStart: false,
 });
@@ -26,16 +26,45 @@ const formCopy: ConfigProps = {
   app_id: '',
   app_key: '',
   shortcut: '',
-  isShortcutEnabled: true,
+  isShortcutEnabled: false,
   isTopmost: false,
   isAutoStart: false,
 };
 
 
+const autoStart = async () => {
+  // 是否为开发环境
+  const isDev = import.meta.env.MODE === 'development';
+
+  // 开发环境下不启用自启动
+  if (isDev) {
+    return;
+  }
+
+  // 自启动状态未改变时不执行
+  if (form.value.isAutoStart === formCopy.isAutoStart) {
+    return;
+  }
+
+  if (form.value.isAutoStart) {
+    await invoke('plugin:autostart|enable');
+    const enabled = await invoke<boolean>('plugin:autostart|is_enabled');
+    if (!enabled) {
+      throw new Error('自启动启用失败');
+    }
+    message.success('自启动启用成功');
+  } else {
+    await invoke('plugin:autostart|disable');
+  }
+}
+
 
 // 提交表单
 const handleSubmit = async () => {
   try {
+    // 启用/禁用自启动
+    await autoStart();
+    // 保存配置
     await invoke('set_config', {
       config: {
         baidu: {
@@ -50,15 +79,18 @@ const handleSubmit = async () => {
         is_auto_start: form.value.isAutoStart,
       },
     });
+    // 设置置顶窗口
     await invoke('set_topmost', { topmost: form.value.isTopmost });
     // 热重载快捷键
     await invoke('reload_shortcut');
+
+
     // 关闭配置弹窗
     emit('close');
     message.success('配置保存成功');
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    message.error('请检查配置信息');
+    message.error(error);
   }
 }
 
@@ -76,8 +108,9 @@ onMounted(async () => {
       formCopy.app_id = config.baidu.appid || '';
       formCopy.app_key = config.baidu.secret || '';
       formCopy.shortcut = config.shortcut?.key || '';
-      formCopy.isShortcutEnabled = config.shortcut?.enabled ?? true;
+      formCopy.isShortcutEnabled = config.shortcut?.enabled ?? false;
       formCopy.isTopmost = config.is_topmost ?? false;
+      formCopy.isAutoStart = config.is_auto_start ?? false;
 
       form.value = { ...formCopy };
     }
@@ -105,9 +138,9 @@ onMounted(async () => {
       <n-form-item label="置顶窗口">
         <n-switch v-model:value="form.isTopmost" size="large" />
       </n-form-item>
-      <n-form-item label="自动启动">
+      <!--<n-form-item label="自动启动">
         <n-switch v-model:value="form.isAutoStart" size="large" />
-      </n-form-item>
+      </n-form-item>-->
       <n-form-item>
         <div class="form-actions">
           <n-button type="primary" @click="handleSubmit" size="large" round>

@@ -14,6 +14,7 @@ pub struct AppConfig {
     pub window: Option<WindowConfig>,
     pub shortcut: Option<ShortcutConfig>,
     pub is_topmost: Option<bool>,
+    pub is_auto_start: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]

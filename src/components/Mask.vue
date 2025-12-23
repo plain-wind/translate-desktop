@@ -13,8 +13,7 @@
   height: 100%;
   background-color: rgba(179, 171, 171, 0.2);
   backdrop-filter: blur(3px);
-  z-index: 9999;
-  /* 确保幕布在最上层 */
+  z-index: 10;
 }
 
 .center {

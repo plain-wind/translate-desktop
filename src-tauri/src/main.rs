@@ -3,9 +3,14 @@ mod commands;
 
 use commands::{config, shortcut, translate, window};
 use tauri::Manager;
+use tauri_plugin_autostart::MacosLauncher;
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent, // macOS 必填
+            None,                       // Windows / Linux 可忽略
+        ))
         // ✅ 正确注册 global-shortcut 插件（Tauri v2）
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
