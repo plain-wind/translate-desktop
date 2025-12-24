@@ -4,6 +4,7 @@ import { NButton, NForm, NFormItem, NInput, NSwitch, useMessage } from 'naive-ui
 import { ref, onMounted } from 'vue';
 import type { ConfigProps } from '@/types/ConfigProps';
 import { invoke } from '@tauri-apps/api/core';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { isEnabled, enable, disable } from '@tauri-apps/plugin-autostart';
 import ShortcutInput from '@/components/ShortcutInput.vue';
 
@@ -32,7 +33,7 @@ const formCopy: ConfigProps = {
   isAutoStart: false,
 };
 
-
+// 处理自启动状态变更
 const autoStart = async () => {
   // 是否为开发环境
   const isDev = import.meta.env.MODE === 'development';
@@ -58,7 +59,6 @@ const autoStart = async () => {
     await disable();
   }
 }
-
 
 // 提交表单
 const handleSubmit = async () => {
@@ -100,6 +100,13 @@ const handleUndo = () => {
   form.value = { ...formCopy };
 };
 
+// 打开百度翻译文档
+const openBaiduDoc = async () => {
+  await openUrl('https://fanyi-api.baidu.com/product/13');
+}
+
+
+
 // 组件挂载时读取配置
 onMounted(async () => {
   try {
@@ -123,6 +130,12 @@ onMounted(async () => {
 
 <template>
   <div class="config">
+    <div class="docs">
+      <a href="https://fanyi-api.baidu.com/product/13" @click.prevent="openBaiduDoc">
+        <span>获取App ID和App Key</span>
+        <div class="underline"></div>
+      </a>
+    </div>
     <n-form label-placement="left" label-width="auto" :model="form">
       <n-form-item label="App ID" prop="app_id">
         <n-input size="large" v-model:value="form.app_id" placeholder="请输入百度翻译 App ID" />
@@ -163,6 +176,7 @@ onMounted(async () => {
 .config {
   width: 500px;
   height: fit-content;
+  padding: $spacing-xl;
   background-color: $white;
   border-radius: $border-radius;
   box-shadow: $shadow-lg;
@@ -171,12 +185,46 @@ onMounted(async () => {
   border: $border-width $border-style $border-color;
 }
 
+/* 文档链接样式 */
+.docs {
+  margin-bottom: $spacing-md;
+
+  a {
+    width: fit-content;
+    display: block;
+    position: relative;
+    color: $primary-color;
+    text-decoration: none;
+    transition: $transition-base;
+
+    &:hover {
+      color: $primary-light;
+    }
+
+    .underline {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 0.5px;
+      background-color: $primary-color;
+      transform-origin: left;
+      transform: scaleX(0);
+      transition: $transition-base;
+    }
+
+    &:hover .underline {
+      transform: scaleX(1);
+    }
+  }
+}
+
 /* 表单样式 - 与Translate组件风格统一 */
 :deep(.n-form) {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
-  padding: $spacing-lg;
+  // padding: $spacing-lg;
   background: $white;
 }
 
@@ -222,11 +270,6 @@ onMounted(async () => {
 :deep(.n-base-input__state-border) {
   border-radius: $border-radius;
 }
-
-// :deep(.n-form-item-feedback) {
-//   font-size: $font-size-sm;
-//   color: #ff4d4f;
-// }
 
 /* 按钮区域样式 */
 .form-actions {

@@ -1,7 +1,109 @@
-# Tauri + Vue + TypeScript
+# 百度翻译桌面应用
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+一个基于 Tauri + Vue 3 + TypeScript 开发的现代化百度翻译桌面应用，提供简洁、高效的翻译服务。
 
-## Recommended IDE Setup
+## 功能特点
 
-- [VS Code](https://code.visualstudio.com/) + [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- 🎯 支持多种语言间的相互翻译
+- 🔄 自动检测源语言
+- 🔀 支持语言快速切换
+- 💻 现代化的 UI 设计
+- 📱 响应式布局，适配不同屏幕尺寸
+- ⚡ 高效的翻译速度
+- 🎨 统一的设计语言和主题
+
+## 技术栈
+
+- **前端框架**：Vue 3 + TypeScript
+- **构建工具**：Vite
+- **UI 组件**：Naive UI
+- **桌面应用框架**：Tauri
+- **样式预处理器**：SCSS
+- **代码规范**：ESLint + Prettier
+
+## 安装和运行
+
+### 前置要求
+
+- Node.js >= 18
+- Rust 环境（用于 Tauri 构建）
+- npm 或 yarn 包管理器
+
+### 安装依赖
+
+```bash
+npm install
+```
+
+### 开发模式运行
+
+```bash
+npm run dev
+```
+
+### 构建生产版本
+
+```bash
+npm run build
+```
+
+## 项目结构
+
+```
+src/
+├── components/          # Vue 组件
+│   ├── Config.vue       # 配置组件
+│   ├── Controlbar.vue   # 控制栏组件
+│   ├── LangSelect.vue   # 语言选择组件
+│   ├── LangTexarea.vue  # 文本输入区域组件
+│   └── Translate.vue    # 翻译主组件
+├── styles/             # 样式文件
+│   └── variables.scss   # SCSS 变量
+├── types/              # TypeScript 类型定义
+│   ├── Lang.ts          # 语言类型
+│   ├── Model.ts         # 配置模型
+│   └── TranslateProps.ts # 翻译属性
+├── App.vue             # 根组件
+└── main.ts             # 入口文件
+```
+
+## 开发说明
+
+### 组件开发
+
+- 使用 Vue 3 的 `<script setup>` 语法
+- 遵循 TypeScript 类型规范
+- 使用 SCSS 预处理器，通过 variables.scss 统一管理样式变量
+- 组件间通信使用 Props 和 Events
+
+### 样式规范
+
+- 所有样式变量定义在 `src/styles/variables.scss` 中
+- 使用 BEM 命名规范
+- 保持组件样式的独立性和可复用性
+- 遵循响应式设计原则
+
+### 构建配置
+
+- 开发环境：使用 Vite 开发服务器
+- 生产环境：使用 Tauri 构建桌面应用
+- 支持 Windows、macOS 和 Linux 平台
+
+## 下载
+
+👉 [GitHub Releases](https://github.com/plain-wind/translate-desktop/releases)
+
+## 贡献指南
+
+欢迎提交 Issue 和 Pull Request！
+
+## 许可证
+
+MIT License
+
+## 致谢
+
+- [Tauri](https://tauri.app/) - 现代化的桌面应用框架
+- [Vue 3](https://vuejs.org/) - 渐进式 JavaScript 框架
+- [Naive UI](https://www.naiveui.com/) - 高质量的 Vue 组件库
+- [百度翻译 API](https://fanyi.baidu.com/) - 翻译服务提供商

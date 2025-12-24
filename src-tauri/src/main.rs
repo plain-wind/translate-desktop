@@ -1,4 +1,6 @@
 // main.rs
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod commands;
 
 use commands::{config, shortcut, translate, window};
@@ -13,6 +15,7 @@ fn main() {
         ))
         // ✅ 正确注册 global-shortcut 插件（Tauri v2）
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let handle = app.handle().clone();
 

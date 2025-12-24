@@ -52,7 +52,6 @@ fn apply_shortcut(app: &AppHandle) -> Result<(), String> {
         })
         .map_err(|e| format!("快捷键监听失败: {:?}", e))?;
 
-    println!("[shortcut] registered: {}", key);
     Ok(())
 }
 
