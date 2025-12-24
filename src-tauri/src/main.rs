@@ -8,8 +8,8 @@ use tauri_plugin_autostart::MacosLauncher;
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
-            MacosLauncher::LaunchAgent, // macOS 必填
-            None,                       // Windows / Linux 可忽略
+            MacosLauncher::LaunchAgent, // Windows / Linux 可忽略
+            None,                       // macOS 可忽略
         ))
         // ✅ 正确注册 global-shortcut 插件（Tauri v2）
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -52,7 +52,6 @@ fn main() {
             window::set_topmost,
             // shortcut
             shortcut::reload_shortcut,
-            // shortcut::register_shortcut,
             // translate
             translate::translate_text,
         ])

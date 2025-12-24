@@ -4,6 +4,7 @@ import { NButton, NForm, NFormItem, NInput, NSwitch, useMessage } from 'naive-ui
 import { ref, onMounted } from 'vue';
 import type { ConfigProps } from '@/types/ConfigProps';
 import { invoke } from '@tauri-apps/api/core';
+import { isEnabled, enable, disable } from '@tauri-apps/plugin-autostart';
 import ShortcutInput from '@/components/ShortcutInput.vue';
 
 const emit = defineEmits<{
@@ -47,14 +48,14 @@ const autoStart = async () => {
   }
 
   if (form.value.isAutoStart) {
-    await invoke('plugin:autostart|enable');
-    const enabled = await invoke<boolean>('plugin:autostart|is_enabled');
+    await enable();
+    const enabled = await isEnabled();
     if (!enabled) {
       throw new Error('自启动启用失败');
     }
-    message.success('自启动启用成功');
+    message.info('已尝试开启自启动，如未生效，请检查系统启动项或安全软件');
   } else {
-    await invoke('plugin:autostart|disable');
+    await disable();
   }
 }
 
@@ -138,9 +139,9 @@ onMounted(async () => {
       <n-form-item label="置顶窗口">
         <n-switch v-model:value="form.isTopmost" size="large" />
       </n-form-item>
-      <!--<n-form-item label="自动启动">
+      <n-form-item label="自动启动">
         <n-switch v-model:value="form.isAutoStart" size="large" />
-      </n-form-item>-->
+      </n-form-item>
       <n-form-item>
         <div class="form-actions">
           <n-button type="primary" @click="handleSubmit" size="large" round>
